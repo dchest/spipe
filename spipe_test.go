@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ var (
 	serverTestBytes = []byte("Hello from server!")
 )
 
-func launchServer(t *testing.T, ln *Listener, done chan<- bool) {
+func launchServer(t *testing.T, ln net.Listener, done chan<- bool) {
 	s, err := ln.Accept()
 	defer s.Close()
 	if err != nil {

@@ -473,28 +473,29 @@ func Dial(key []byte, network, raddr string) (*Conn, error) {
 	return c, nil
 }
 
-type Listener struct {
+type listener struct {
+	net.Listener
 	secretKey []byte
-	nl        net.Listener
 }
 
 // Listen announces on the local network address laddr, which
 // will accept spipe client connections with the given shared
 // secret key.
-func Listen(key []byte, network, laddr string) (*Listener, error) {
+func Listen(key []byte, network, laddr string) (net.Listener, error) {
 	nl, err := net.Listen(network, laddr)
 	if err != nil {
 		return nil, err
 	}
-	return &Listener{
+	return &listener{
+		Listener:  nl,
 		secretKey: secretKeyFromKeyData(key),
-		nl:        nl,
 	}, nil
 }
 
 // Accept waits for and returns the next connection to the listener.
-func (l *Listener) Accept() (c *Conn, err error) {
-	nc, err := l.nl.Accept()
+// The returned connection c is a *spipe.Conn.
+func (l *listener) Accept() (c net.Conn, err error) {
+	nc, err := l.Listener.Accept()
 	if err != nil {
 		return nil, err
 	}
@@ -503,14 +504,6 @@ func (l *Listener) Accept() (c *Conn, err error) {
 		secretKey: l.secretKey,
 		isClient:  false,
 	}, nil
-}
-
-func (l *Listener) Close() error {
-	return l.nl.Close()
-}
-
-func (l *Listener) Addr() net.Addr {
-	return l.nl.Addr()
 }
 
 // Client returns a new spipe client connection using nc as the
