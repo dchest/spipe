@@ -1,3 +1,7 @@
+// Copyright 2013 Dmitry Chestnykh. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // Package spipe implements Colin Percival's spiped protocol
 // (http://www.tarsnap.com/spiped.html) for creating symmetrically
 // encrypted and authenticated connections.
