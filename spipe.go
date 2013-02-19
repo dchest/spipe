@@ -456,7 +456,12 @@ func Dial(key []byte, network, raddr string) (*ClientConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Client(key, nc)
+	c := Client(key, nc)
+	// Perform handshake.
+	if err := c.handshake(); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 type Listener struct {
@@ -519,39 +524,24 @@ func (c *ServerConn) Handshake() error {
 
 // Client returns a new spiped client connection using nc as the
 // underlying connection.
-//
-// It performs handshake to authenticate.
-func Client(key []byte, nc net.Conn) (*ClientConn, error) {
-	// Initialize client connection.
-	c := &ClientConn{
+func Client(key []byte, nc net.Conn) *ClientConn {
+	return &ClientConn{
 		connection: connection{
 			conn:      nc,
 			secretKey: secretKeyFromKeyData(key),
 			isClient:  true,
 		},
 	}
-	// Perform handshake.
-	if err := c.handshake(); err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 // Server returns a new spiped server connection using nc as the
 // underlying connection.
-//
-// It performs handshake to authenticate.
-func Server(key []byte, nc net.Conn) (*ServerConn, error) {
-	c := &ServerConn{
+func Server(key []byte, nc net.Conn) *ServerConn {
+	return &ServerConn{
 		connection: connection{
 			conn:      nc,
 			secretKey: secretKeyFromKeyData(key),
 			isClient:  false,
 		},
 	}
-	// Perform handshake.
-	if err := c.handshake(); err != nil {
-		return nil, err
-	}
-	return c, nil
 }
