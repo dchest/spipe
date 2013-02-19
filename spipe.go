@@ -295,7 +295,7 @@ func (c *Conn) receiveBytes(p []byte) error {
 	return nil
 }
 
-// Handshake runs handshake if it has not yet been run. Most uses of this
+// Handshake runs handshake if it has not yet been run. Most users of this
 // package need not call Handshake explicitly: the first Read or Write will
 // call it automatically.
 func (c *Conn) Handshake() error {
