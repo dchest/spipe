@@ -109,6 +109,8 @@ func (w *encryptor) flushBuffer() error {
 }
 
 func (w *encryptor) Flush() error {
+	w.Lock()
+	defer w.Unlock()
 	return w.flushBuffer()
 }
 
