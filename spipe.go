@@ -467,6 +467,7 @@ func Dial(key []byte, network, raddr string) (*Conn, error) {
 	c := Client(key, nc)
 	// Perform handshake.
 	if err := c.Handshake(); err != nil {
+		c.Close()
 		return nil, err
 	}
 	return c, nil
