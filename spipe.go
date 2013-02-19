@@ -70,7 +70,7 @@ type encryptor struct {
 func newEncryptor(w io.Writer, cipherKey, hmacKey []byte) *encryptor {
 	blockCipher, err := aes.NewCipher(cipherKey)
 	if err != nil {
-		panic("gospiped: " + err.Error())
+		panic("spipe: " + err.Error())
 	}
 	return &encryptor{
 		blockCipher: blockCipher,
@@ -90,7 +90,7 @@ func (w *encryptor) flushBuffer() error {
 		// Writers must always return error on partial write,
 		// but just in case our underlying writer is broken,
 		// return our own error.
-		return errors.New("gospiped: wrote partial packet")
+		return errors.New("spipe: wrote partial packet")
 	}
 	// Wrote full packet.
 	// Increment packet counter.
@@ -177,7 +177,7 @@ type decryptor struct {
 func newDecryptor(r io.Reader, cipherKey, hmacKey []byte) *decryptor {
 	blockCipher, err := aes.NewCipher(cipherKey)
 	if err != nil {
-		panic("gospiped: " + err.Error())
+		panic("spipe: " + err.Error())
 	}
 	return &decryptor{
 		blockCipher: blockCipher,
@@ -197,7 +197,7 @@ func (r *decryptor) openPacket() error {
 	r.mac.Write(r.buf[:payloadSize])
 	r.mac.Write(iv[:8])
 	if subtle.ConstantTimeCompare(r.mac.Sum(sum[:0]), r.buf[payloadSize:]) != 1 {
-		return errors.New("gospiped: failed to authenticate packet")
+		return errors.New("spipe: failed to authenticate packet")
 	}
 
 	// Increment packet counter.
@@ -211,7 +211,7 @@ func (r *decryptor) openPacket() error {
 	// Read message length.
 	msgLen := binary.BigEndian.Uint32(r.buf[messageSize:])
 	if msgLen > messageSize {
-		return errors.New("gospiped: message length is too large")
+		return errors.New("spipe: message length is too large")
 	}
 
 	r.msg = r.buf[:msgLen]
@@ -283,7 +283,7 @@ func (c *Conn) sendBytes(p []byte) error {
 		return err
 	}
 	if n != len(p) {
-		return errors.New("gospiped: partial write")
+		return errors.New("spipe: partial write")
 	}
 	return nil
 }
@@ -375,7 +375,7 @@ func (c *Conn) Handshake() error {
 	h = hmac.New(sha256.New, theirDHMac)
 	h.Write(theirAuthPublicKey[0:256])
 	if subtle.ConstantTimeCompare(h.Sum(sum[:0]), theirAuthPublicKey[256:]) != 1 {
-		return errors.New("gospiped: authentication failed")
+		return errors.New("spipe: authentication failed")
 	}
 
 	if !c.isClient {
@@ -445,7 +445,7 @@ func secretKeyFromKeyData(keyData []byte) []byte {
 }
 
 // Dial connects to remote address raddr on the given network, which must be
-// running spiped server with the same shared secret key. It then performs
+// running spipe server with the same shared secret key. It then performs
 // handshake to authenticate itself, and returns the connection on success.
 func Dial(key []byte, network, raddr string) (*Conn, error) {
 	nc, err := net.Dial(network, raddr)
@@ -466,7 +466,7 @@ type Listener struct {
 }
 
 // Listen announces on the local network address laddr, which
-// will accept spiped client connections with the given shared
+// will accept spipe client connections with the given shared
 // secret key.
 func Listen(key []byte, network, laddr string) (*Listener, error) {
 	nl, err := net.Listen(network, laddr)
@@ -502,7 +502,7 @@ func (l *Listener) Addr() net.Addr {
 	return l.nl.Addr()
 }
 
-// Client returns a new spiped client connection using nc as the
+// Client returns a new spipe client connection using nc as the
 // underlying connection.
 func Client(key []byte, nc net.Conn) *Conn {
 	return &Conn{
@@ -512,7 +512,7 @@ func Client(key []byte, nc net.Conn) *Conn {
 	}
 }
 
-// Server returns a new spiped server connection using nc as the
+// Server returns a new spipe server connection using nc as the
 // underlying connection.
 func Server(key []byte, nc net.Conn) *Conn {
 	return &Conn{
