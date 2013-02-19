@@ -420,7 +420,10 @@ func (c *Conn) Handshake() error {
 }
 
 func (c *Conn) Close() error {
+	c.handshakeMutex.Lock()
+	defer c.handshakeMutex.Unlock()
 	//XXX Flush writer?
+	c.handshakePerformed = false
 	c.r = nil
 	c.w = nil
 	return c.conn.Close()
