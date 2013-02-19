@@ -2,8 +2,11 @@
 // (http://www.tarsnap.com/spiped.html) for creating symmetrically
 // encrypted and authenticated connections.
 //
-// It requires a pre-shared symmetric key between client and server.
-//
+// Communication between client and server requires a pre-shared symmetric key
+// with at least 256 bits of entropy. The initial key negotiation is performed
+// using HMAC-SHA256 and an authenticated Diffie-Hellman key exchange over the
+// standard 2048-bit "group 14". Packets are transmitted encrypted with AES-256
+// in CTR mode and authenticated using HMAC-SHA256.
 //
 // The Dial function connects to a server and performs handshake:
 //
@@ -28,6 +31,9 @@
 // 		go handleConnection(conn)
 // 	}
 //
+//
+// Shared key can be of any length, as it is compressed with SHA256 before
+// using.
 package spipe
 
 import (
