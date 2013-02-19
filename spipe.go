@@ -1,5 +1,6 @@
-// Package spipe implements Colin Percival's spiped protocol for
-// creating symmetrically encrypted and authenticated connections.
+// Package spipe implements Colin Percival's spiped protocol
+// (http://www.tarsnap.com/spiped.html) for creating symmetrically
+// encrypted and authenticated connections.
 //
 // It requires a pre-shared symmetric key between client and server.
 //
