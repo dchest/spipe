@@ -483,8 +483,6 @@ func Listen(key []byte, network, laddr string) (*Listener, error) {
 }
 
 // Accept waits for and returns the next connection to the listener.
-// After accepting the connection, Handshake must be called on it
-// to authenticate client.
 func (l *Listener) Accept() (c *Conn, err error) {
 	nc, err := l.nl.Accept()
 	if err != nil {
