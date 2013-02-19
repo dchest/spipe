@@ -258,7 +258,7 @@ func (r *decryptor) Read(p []byte) (nn int, err error) {
 	return
 }
 
-type connection struct {
+type Conn struct {
 	w *encryptor
 	r *decryptor
 
@@ -271,13 +271,13 @@ type connection struct {
 	conn net.Conn // underlying connection
 }
 
-func (c *connection) LocalAddr() net.Addr                { return c.conn.LocalAddr() }
-func (c *connection) RemoteAddr() net.Addr               { return c.conn.RemoteAddr() }
-func (c *connection) SetDeadline(t time.Time) error      { return c.conn.SetDeadline(t) }
-func (c *connection) SetReadDeadline(t time.Time) error  { return c.conn.SetReadDeadline(t) }
-func (c *connection) SetWriteDeadline(t time.Time) error { return c.conn.SetWriteDeadline(t) }
+func (c *Conn) LocalAddr() net.Addr                { return c.conn.LocalAddr() }
+func (c *Conn) RemoteAddr() net.Addr               { return c.conn.RemoteAddr() }
+func (c *Conn) SetDeadline(t time.Time) error      { return c.conn.SetDeadline(t) }
+func (c *Conn) SetReadDeadline(t time.Time) error  { return c.conn.SetReadDeadline(t) }
+func (c *Conn) SetWriteDeadline(t time.Time) error { return c.conn.SetWriteDeadline(t) }
 
-func (c *connection) sendBytes(p []byte) error {
+func (c *Conn) sendBytes(p []byte) error {
 	n, err := c.conn.Write(p)
 	if err != nil {
 		return err
@@ -288,14 +288,14 @@ func (c *connection) sendBytes(p []byte) error {
 	return nil
 }
 
-func (c *connection) receiveBytes(p []byte) error {
+func (c *Conn) receiveBytes(p []byte) error {
 	if _, err := io.ReadFull(c.conn, p); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *connection) handshake() error {
+func (c *Conn) Handshake() error {
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 
@@ -410,29 +410,29 @@ func (c *connection) handshake() error {
 	return nil
 }
 
-func (c *connection) Close() error {
+func (c *Conn) Close() error {
 	//XXX Flush writer?
 	c.r = nil
 	c.w = nil
 	return c.conn.Close()
 }
 
-func (c *connection) Read(p []byte) (nn int, err error) {
-	if err := c.handshake(); err != nil {
+func (c *Conn) Read(p []byte) (nn int, err error) {
+	if err := c.Handshake(); err != nil {
 		return 0, err
 	}
 	return c.r.Read(p)
 }
 
-func (c *connection) Write(p []byte) (nn int, err error) {
-	if err := c.handshake(); err != nil {
+func (c *Conn) Write(p []byte) (nn int, err error) {
+	if err := c.Handshake(); err != nil {
 		return 0, err
 	}
 	return c.w.Write(p)
 }
 
-func (c *connection) Flush() error {
-	if err := c.handshake(); err != nil {
+func (c *Conn) Flush() error {
+	if err := c.Handshake(); err != nil {
 		return err
 	}
 	return c.w.Flush()
@@ -444,21 +444,17 @@ func secretKeyFromKeyData(keyData []byte) []byte {
 	return h.Sum(nil)
 }
 
-type ClientConn struct {
-	connection
-}
-
 // Dial connects to remote address raddr on the given network, which must be
 // running spiped server with the same shared secret key. It then performs
 // handshake to authenticate itself, and returns the connection on success.
-func Dial(key []byte, network, raddr string) (*ClientConn, error) {
+func Dial(key []byte, network, raddr string) (*Conn, error) {
 	nc, err := net.Dial(network, raddr)
 	if err != nil {
 		return nil, err
 	}
 	c := Client(key, nc)
 	// Perform handshake.
-	if err := c.handshake(); err != nil {
+	if err := c.Handshake(); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -486,17 +482,15 @@ func Listen(key []byte, network, laddr string) (*Listener, error) {
 // Accept waits for and returns the next connection to the listener.
 // After accepting the connection, Handshake must be called on it
 // to authenticate client.
-func (l *Listener) Accept() (c *ServerConn, err error) {
+func (l *Listener) Accept() (c *Conn, err error) {
 	nc, err := l.nl.Accept()
 	if err != nil {
 		return nil, err
 	}
-	return &ServerConn{
-		connection: connection{
-			conn:      nc,
-			secretKey: l.secretKey,
-			isClient:  false,
-		},
+	return &Conn{
+		conn:      nc,
+		secretKey: l.secretKey,
+		isClient:  false,
 	}, nil
 }
 
@@ -508,40 +502,22 @@ func (l *Listener) Addr() net.Addr {
 	return l.nl.Addr()
 }
 
-type ServerConn struct {
-	connection
-}
-
-// Handshake runs the server handshake if it has not yet been run.
-// Most uses of this package need not call Handshake explicitly: the first Read
-// or Write will call it automatically.
-func (c *ServerConn) Handshake() error {
-	if err := c.handshake(); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Client returns a new spiped client connection using nc as the
 // underlying connection.
-func Client(key []byte, nc net.Conn) *ClientConn {
-	return &ClientConn{
-		connection: connection{
-			conn:      nc,
-			secretKey: secretKeyFromKeyData(key),
-			isClient:  true,
-		},
+func Client(key []byte, nc net.Conn) *Conn {
+	return &Conn{
+		conn:      nc,
+		secretKey: secretKeyFromKeyData(key),
+		isClient:  true,
 	}
 }
 
 // Server returns a new spiped server connection using nc as the
 // underlying connection.
-func Server(key []byte, nc net.Conn) *ServerConn {
-	return &ServerConn{
-		connection: connection{
-			conn:      nc,
-			secretKey: secretKeyFromKeyData(key),
-			isClient:  false,
-		},
+func Server(key []byte, nc net.Conn) *Conn {
+	return &Conn{
+		conn:      nc,
+		secretKey: secretKeyFromKeyData(key),
+		isClient:  false,
 	}
 }
