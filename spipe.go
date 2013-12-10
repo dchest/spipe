@@ -302,6 +302,9 @@ func (c *Conn) sendBytes(p []byte) error {
 
 func (c *Conn) receiveBytes(p []byte) error {
 	if _, err := io.ReadFull(c.conn, p); err != nil {
+		if err == io.EOF {
+			return io.ErrUnexpectedEOF
+		}
 		return err
 	}
 	return nil
